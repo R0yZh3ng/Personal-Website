@@ -55,16 +55,28 @@
 
 /* ─── Floating Equations ─── */
 .floating-equation {
-    color: rgba(180, 160, 255, 0.18);
-    font-size: 16px;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 13px;
     white-space: nowrap;
     user-select: none;
-    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.06));
+    filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.15));
+    animation: twinkle-pulse 7s ease-in-out infinite;
 }
 
 .floating-equation .katex {
     color: inherit;
     font-size: inherit;
+}
+
+@keyframes twinkle-pulse {
+    0%, 100% {
+        opacity: 0.15;
+        filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.1));
+    }
+    50% {
+        opacity: 0.4;
+        filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.25));
+    }
 }
 
 .scene-logo {

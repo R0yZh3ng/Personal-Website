@@ -194,7 +194,11 @@ const FloatingEquation = ({ latex, position, speed }: { latex: string; position:
         <Float speed={speed} rotationIntensity={0.08} floatIntensity={0.3}>
             <group ref={ref} position={position}>
                 <Html center style={{ pointerEvents: 'none' }}>
-                    <div className="floating-equation" dangerouslySetInnerHTML={{ __html: html }} />
+                    <div
+                        className="floating-equation"
+                        style={{ animationDelay: `${Math.random() * 4}s` }}
+                        dangerouslySetInnerHTML={{ __html: html }}
+                    />
                 </Html>
             </group>
         </Float>
@@ -203,20 +207,25 @@ const FloatingEquation = ({ latex, position, speed }: { latex: string; position:
 
 const FloatingEquations = () => {
     const items = useMemo(() => {
-        return latexEquations.map((eq, i) => {
-            const r = 6 + Math.random() * 14;
-            const theta = (i / latexEquations.length) * Math.PI * 2 + Math.random() * 0.4;
-            const y = (Math.random() - 0.5) * 12;
-            return {
-                latex: eq,
-                position: [
-                    r * Math.cos(theta),
-                    y,
-                    r * Math.sin(theta),
-                ] as [number, number, number],
-                speed: 0.4 + Math.random() * 1.2,
-            };
-        });
+        const result = [];
+        // 12x the base equations for a massive field
+        for (let j = 0; j < 12; j++) {
+            latexEquations.forEach((eq, i) => {
+                const r = 8 + Math.random() * 35; // Even wider distribution
+                const theta = Math.random() * Math.PI * 2;
+                const y = (Math.random() - 0.5) * 30;
+                result.push({
+                    latex: eq,
+                    position: [
+                        r * Math.cos(theta),
+                        y,
+                        r * Math.sin(theta),
+                    ] as [number, number, number],
+                    speed: 0.15 + Math.random() * 0.7,
+                });
+            });
+        }
+        return result;
     }, []);
 
     return (
@@ -225,6 +234,52 @@ const FloatingEquations = () => {
                 <FloatingEquation key={i} {...item} />
             ))}
         </>
+    );
+};
+
+const Sun = ({ onClick }: { onClick: () => void }) => {
+    const meshRef = useRef<THREE.Mesh>(null);
+    const coronaRef = useRef<THREE.Mesh>(null);
+
+    useFrame(({ clock }) => {
+        if (meshRef.current && coronaRef.current) {
+            const time = clock.getElapsedTime();
+            const pulse = 1 + Math.sin(time * 1.5) * 0.05;
+            meshRef.current.scale.set(pulse, pulse, pulse);
+            coronaRef.current.scale.set(pulse * 1.3, pulse * 1.3, pulse * 1.3);
+            
+            // Dynamic emissive intensity
+            if (meshRef.current.material instanceof THREE.MeshStandardMaterial) {
+                meshRef.current.material.emissiveIntensity = 2 + Math.sin(time * 2) * 0.5;
+            }
+        }
+    });
+
+    return (
+        <group position={[0, 0, 0]}>
+            {/* Sun Core */}
+            <mesh ref={meshRef} onClick={(e) => { e.stopPropagation(); onClick(); }} cursor="pointer">
+                <sphereGeometry args={[1.2, 64, 64]} />
+                <meshStandardMaterial 
+                    color="#ffcc33" 
+                    emissive="#ffcc33" 
+                    emissiveIntensity={2} 
+                />
+            </mesh>
+
+            {/* Sun Corona / Glow */}
+            <mesh ref={coronaRef}>
+                <sphereGeometry args={[1.2, 32, 32]} />
+                <meshBasicMaterial 
+                    color="#ff6600" 
+                    transparent 
+                    opacity={0.3} 
+                />
+            </mesh>
+
+            {/* Point Light from Sun */}
+            <pointLight intensity={3} distance={60} color="#ffaa00" />
+        </group>
     );
 };
 
@@ -297,7 +352,7 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
                 </button>
             </div>
 
-            <Canvas camera={{ position: [0, 0, 12], fov: 60 }}>
+            <Canvas camera={{ position: [8, 5, 15], fov: 60 }}>
                 <color attach="background" args={['#030308']} />
 
                 {/* Lighting */}
@@ -317,6 +372,9 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
 
                 {/* Floating particles */}
                 <Particles />
+
+                {/* Central Sun */}
+                <Sun onClick={() => setShowAbout(true)} />
 
                 {/* Project solids */}
                 {projects.map((p) => (
