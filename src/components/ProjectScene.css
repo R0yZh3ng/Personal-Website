@@ -217,7 +217,8 @@
     font-size: 9px;
     white-space: nowrap;
     user-select: none;
-    text-shadow: 0 0 5px currentColor;
+    text-shadow: 0 0 8px currentColor, 0 0 12px currentColor;
+    font-weight: 500;
     font-family: 'Inter', sans-serif;
     pointer-events: none;
 }

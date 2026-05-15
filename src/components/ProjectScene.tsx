@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, Float, Html, Trail } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
@@ -6,6 +6,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import * as THREE from 'three';
 import { AboutMe } from './AboutMe';
 import './ProjectScene.css';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 /* ─── Wireframe Platonic Solid ─── */
 const PlatonicSolid = ({
@@ -150,7 +152,6 @@ const Particles = () => {
 
 /* ─── Equation Orbital Ring ─── */
 const EquationRing = ({ radius, color, segments = 40 }: { radius: number; color: string; segments?: number }) => {
-    // Equations to populate the ring
     const ringEquations = [
         String.raw`\int x^n dx`, String.raw`e^{i\pi} + 1 = 0`, 
         String.raw`f(n) = \Theta(g(n))`, String.raw`P = NP?`,
@@ -175,11 +176,11 @@ const EquationRing = ({ radius, color, segments = 40 }: { radius: number; color:
                         position={[x, y, 0]} 
                         center 
                         transform
-                        rotation={[0, 0, angle + Math.PI / 2]} // Tangent orientation
+                        rotation={[0, 0, angle + Math.PI / 2]} 
                     >
                         <div 
                             className="ring-equation" 
-                            style={{ color: color, opacity: 0.35 }}
+                            style={{ color: color, opacity: 0.6 }}
                             dangerouslySetInnerHTML={{ __html: html }} 
                         />
                     </Html>
@@ -187,7 +188,9 @@ const EquationRing = ({ radius, color, segments = 40 }: { radius: number; color:
             })}
         </group>
     );
-};/* ─── Unified Orbital Shell ─── */
+};
+
+/* ─── Unified Orbital Shell ─── */
 const OrbitalShell = ({ project, onProjectSelect, paused = false }: { project: any; onProjectSelect: (pos: THREE.Vector3) => void; paused?: boolean }) => {
     const shellRef = useRef<THREE.Group>(null);
     const localTime = useRef(0);
@@ -202,21 +205,11 @@ const OrbitalShell = ({ project, onProjectSelect, paused = false }: { project: a
     });
 
     return (
-        <group 
-            rotation={[project.orbitTilt, 0, project.orbitTilt * 0.5]}
-        >
-            {/* The Equation Path */}
+        <group rotation={[project.orbitTilt, 0, project.orbitTilt * 0.5]}>
             <EquationRing radius={project.orbitRadius} color={project.color} />
-            
-            {/* The Orbiting Solid */}
             <group ref={shellRef}>
                 <group position={[project.orbitRadius, 0, 0]}>
-                    <Trail
-                        width={2.0}
-                        length={15}
-                        color={project.color}
-                        attenuation={(t) => t * t}
-                    >
+                    <Trail width={2.0} length={15} color={project.color} attenuation={(t) => t * t}>
                         <group>
                             <PlatonicSolid 
                                 {...project} 
@@ -231,9 +224,45 @@ const OrbitalShell = ({ project, onProjectSelect, paused = false }: { project: a
     );
 };
 
-/* ─── Floating LaTeX Equations ─── */
-import katex from 'katex';
-import 'katex/dist/katex.min.css';
+/* ─── Geometric Holographic Person (Deity) ─── */
+const GeometricPerson = () => {
+    const groupRef = useRef<THREE.Group>(null);
+    const color = "#8b5cf6";
+
+    useFrame(({ clock }) => {
+        if (groupRef.current) {
+            groupRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.2) * 0.1;
+            groupRef.current.position.y = -8 + Math.sin(clock.getElapsedTime() * 0.5) * 0.5;
+        }
+    });
+
+    return (
+        <group ref={groupRef} position={[0, -8, -15]} scale={12}>
+            <mesh position={[0, 1.2, 0]}>
+                <icosahedronGeometry args={[0.15, 0]} />
+                <meshStandardMaterial color={color} wireframe transparent opacity={0.08} />
+            </mesh>
+            <mesh position={[0, 0.7, 0]} scale={[0.8, 1.2, 0.5]}>
+                <octahedronGeometry args={[0.4, 0]} />
+                <meshStandardMaterial color={color} wireframe transparent opacity={0.05} />
+            </mesh>
+            <group position={[0, 0.7, 0]}>
+                <mesh position={[-0.6, 0.2, 1]} rotation={[0.5, 0, -0.5]}>
+                    <boxGeometry args={[0.1, 0.8, 0.1]} />
+                    <meshStandardMaterial color={color} wireframe transparent opacity={0.05} />
+                </mesh>
+                <mesh position={[0.6, 0.2, 1]} rotation={[0.5, 0, 0.5]}>
+                    <boxGeometry args={[0.1, 0.8, 0.1]} />
+                    <meshStandardMaterial color={color} wireframe transparent opacity={0.05} />
+                </mesh>
+            </group>
+            <mesh position={[0, 1.0, 0]} scale={[1.5, 0.2, 0.5]}>
+                <boxGeometry args={[0.6, 0.6, 0.6]} />
+                <meshStandardMaterial color={color} wireframe transparent opacity={0.05} />
+            </mesh>
+        </group>
+    );
+};
 
 const latexEquations = [
     String.raw`E = mc^{2}`,
@@ -284,19 +313,14 @@ const FloatingEquation = ({ latex, position, speed }: { latex: string; position:
 const FloatingEquations = () => {
     const items = useMemo(() => {
         const result = [];
-        // 12x the base equations for a massive field
         for (let j = 0; j < 12; j++) {
-            latexEquations.forEach((eq, i) => {
-                const r = 8 + Math.random() * 35; // Even wider distribution
+            latexEquations.forEach((eq) => {
+                const r = 8 + Math.random() * 35;
                 const theta = Math.random() * Math.PI * 2;
                 const y = (Math.random() - 0.5) * 30;
                 result.push({
                     latex: eq,
-                    position: [
-                        r * Math.cos(theta),
-                        y,
-                        r * Math.sin(theta),
-                    ] as [number, number, number],
+                    position: [r * Math.cos(theta), y, r * Math.sin(theta)] as [number, number, number],
                     speed: 0.15 + Math.random() * 0.7,
                 });
             });
@@ -324,7 +348,6 @@ const GeometricSun = ({ onClick }: { onClick: () => void }) => {
             coreRef.current.rotation.z = time * 0.3;
             outerRef.current.rotation.y = -time * 0.2;
             outerRef.current.rotation.x = time * 0.1;
-            
             const pulse = 1 + Math.sin(time * 2) * 0.1;
             coreRef.current.scale.set(pulse, pulse, pulse);
         }
@@ -332,31 +355,14 @@ const GeometricSun = ({ onClick }: { onClick: () => void }) => {
 
     return (
         <group position={[0, 0, 0]} onClick={(e) => { e.stopPropagation(); onClick(); }}>
-            {/* Inner Core */}
             <mesh ref={coreRef}>
                 <icosahedronGeometry args={[0.8, 0]} />
-                <meshStandardMaterial 
-                    color="#fff" 
-                    emissive="#ff0044" 
-                    emissiveIntensity={4} 
-                    wireframe
-                />
+                <meshStandardMaterial color="#fff" emissive="#ff0044" emissiveIntensity={4} wireframe />
             </mesh>
-
-            {/* Outer Crystalline Shell */}
             <mesh ref={outerRef}>
                 <icosahedronGeometry args={[1.2, 1]} />
-                <meshStandardMaterial 
-                    color="#ff00ff" 
-                    emissive="#5500ff" 
-                    emissiveIntensity={2} 
-                    transparent
-                    opacity={0.3}
-                    wireframe
-                />
+                <meshStandardMaterial color="#ff00ff" emissive="#5500ff" emissiveIntensity={2} transparent opacity={0.3} wireframe />
             </mesh>
-
-            {/* Chaotic Light Sources */}
             <pointLight intensity={5} distance={30} color="#ff0044" position={[2, 2, 2]} />
             <pointLight intensity={5} distance={30} color="#00ffff" position={[-2, -2, -2]} />
             <pointLight intensity={3} distance={50} color="#ffaa00" />
@@ -364,26 +370,16 @@ const GeometricSun = ({ onClick }: { onClick: () => void }) => {
     );
 };
 
-/* ─── Project Star Link (Placeholder for Images/Links) ─── */
 const StarLink = ({ position, label }: { position: [number, number, number], label: string }) => {
     const [hovered, setHovered] = useState(false);
     return (
         <group position={position}>
-            <mesh 
-                onPointerOver={() => setHovered(true)} 
-                onPointerOut={() => setHovered(false)}
-            >
+            <mesh onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
                 <sphereGeometry args={[0.1, 16, 16]} />
-                <meshStandardMaterial 
-                    color="#fff" 
-                    emissive="#fff" 
-                    emissiveIntensity={hovered ? 5 : 1} 
-                />
+                <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={hovered ? 5 : 1} />
             </mesh>
             <Html position={[0, 0.3, 0]} center>
-                <div className={`star-link-label ${hovered ? 'active' : ''}`}>
-                    {label}
-                </div>
+                <div className={`star-link-label ${hovered ? 'active' : ''}`}>{label}</div>
             </Html>
         </group>
     );
@@ -391,24 +387,41 @@ const StarLink = ({ position, label }: { position: [number, number, number], lab
 
 /* ─── Camera Controller ─── */
 const CameraController = ({ mode, targetPos }: { mode: 'galaxy' | 'project', targetPos: THREE.Vector3 | null }) => {
+    const isTransitioning = useRef(false);
+    const lastMode = useRef(mode);
+
+    useEffect(() => {
+        if (mode !== lastMode.current) {
+            isTransitioning.current = true;
+            lastMode.current = mode;
+        }
+    }, [mode]);
+
     useFrame((state) => {
+        if (!isTransitioning.current && mode === 'galaxy') return;
+
         const step = 0.05;
         if (mode === 'project' && targetPos) {
-            // Target view: looking up from the shape
             const idealCameraPos = new THREE.Vector3().copy(targetPos).add(new THREE.Vector3(0, 1.2, 5));
             state.camera.position.lerp(idealCameraPos, step);
             state.camera.lookAt(targetPos.x, targetPos.y + 3, targetPos.z - 8);
-        } else {
-            // Galaxy view: standard perspective
-            const idealCameraPos = new THREE.Vector3(0, 4, 15);
+            
+            if (state.camera.position.distanceTo(idealCameraPos) < 0.01) {
+                isTransitioning.current = false;
+            }
+        } else if (isTransitioning.current && mode === 'galaxy') {
+            const idealCameraPos = new THREE.Vector3(0, 0, 18);
             state.camera.position.lerp(idealCameraPos, step);
             state.camera.lookAt(0, 0, 0);
+            
+            if (state.camera.position.distanceTo(idealCameraPos) < 0.01) {
+                isTransitioning.current = false;
+            }
         }
     });
     return null;
 };
 
-/* ─── Scene ─── */
 interface ProjectSceneProps {
     onBack?: () => void;
 }
@@ -420,121 +433,33 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
     const [solidWorldPos, setSolidWorldPos] = useState<THREE.Vector3 | null>(null);
 
     const projects = [
-        {
-            id: 1,
-            label: 'Quantum Simulator',
-            description: 'Simulating quantum circuits and entanglement dynamics',
-            color: '#a78bfa',
-            geometryType: 'icosahedron',
-            solidScale: 1.0,
-            rotSpeed: 0.8,
-            orbitRadius: 4,
-            orbitSpeed: 0.2,
-            orbitTilt: 0.5,
-            orbitPhase: 0,
-        },
-        {
-            id: 2,
-            label: 'Algorithmic Trading',
-            description: 'High-frequency market-making strategies in C++ / Python',
-            color: '#60a5fa',
-            geometryType: 'octahedron',
-            solidScale: 0.9,
-            rotSpeed: 1.0,
-            orbitRadius: 5.5,
-            orbitSpeed: 0.15,
-            orbitTilt: -0.5,
-            orbitPhase: 2.5,
-        },
-        {
-            id: 3,
-            label: 'Topology Visualizer',
-            description: 'Interactive exploration of complex manifolds & knot invariants',
-            color: '#34d399',
-            geometryType: 'dodecahedron',
-            solidScale: 1.1,
-            rotSpeed: 0.6,
-            orbitRadius: 7,
-            orbitSpeed: 0.12,
-            orbitTilt: 0.5,
-            orbitPhase: 1.2,
-        },
-        {
-            id: 4,
-            label: 'Fluid Dynamics',
-            description: 'GPU-accelerated Navier-Stokes solver with real-time vis',
-            color: '#fbbf24',
-            geometryType: 'tetrahedron',
-            solidScale: 0.9,
-            rotSpeed: 0.9,
-            orbitRadius: 8.5,
-            orbitSpeed: 0.1,
-            orbitTilt: -0.5,
-            orbitPhase: 3.8,
-        },
-        {
-            id: 5,
-            label: 'Neural Engine',
-            description: 'Transformer-based LLM optimization for edge devices',
-            color: '#ec4899',
-            geometryType: 'box',
-            solidScale: 0.8,
-            rotSpeed: 1.2,
-            orbitRadius: 10,
-            orbitSpeed: 0.08,
-            orbitTilt: 0.5,
-            orbitPhase: 5.2,
-        },
-        {
-            id: 6,
-            label: 'Cloud Infrastructure',
-            description: 'Auto-scaling k8s clusters with serverless orchestration',
-            color: '#06b6d4',
-            geometryType: 'octahedron',
-            solidScale: 0.9,
-            rotSpeed: 1.1,
-            orbitRadius: 11.5,
-            orbitSpeed: 0.06,
-            orbitTilt: -0.5,
-            orbitPhase: 0.8,
-        },
+        { id: 1, label: 'Quantum Simulator', description: 'Simulating quantum circuits', color: '#a78bfa', geometryType: 'icosahedron', solidScale: 1.0, rotSpeed: 0.8, orbitRadius: 4, orbitSpeed: 0.2, orbitTilt: 0.5, orbitPhase: 0 },
+        { id: 2, label: 'Algorithmic Trading', description: 'High-frequency strategies', color: '#60a5fa', geometryType: 'octahedron', solidScale: 0.9, rotSpeed: 1.0, orbitRadius: 5.5, orbitSpeed: 0.15, orbitTilt: -0.5, orbitPhase: 2.5 },
+        { id: 3, label: 'Topology Visualizer', description: 'Exploring complex manifolds', color: '#34d399', geometryType: 'dodecahedron', solidScale: 1.1, rotSpeed: 0.6, orbitRadius: 7, orbitSpeed: 0.12, orbitTilt: 0.5, orbitPhase: 1.2 },
+        { id: 4, label: 'Fluid Dynamics', description: 'GPU Navier-Stokes solver', color: '#fbbf24', geometryType: 'tetrahedron', solidScale: 0.9, rotSpeed: 0.9, orbitRadius: 8.5, orbitSpeed: 0.1, orbitTilt: -0.5, orbitPhase: 3.8 },
+        { id: 5, label: 'Neural Engine', description: 'Edge LLM optimization', color: '#ec4899', geometryType: 'box', solidScale: 0.8, rotSpeed: 1.2, orbitRadius: 10, orbitSpeed: 0.08, orbitTilt: 0.5, orbitPhase: 5.2 },
+        { id: 6, label: 'Cloud Infrastructure', description: 'Serverless orchestration', color: '#06b6d4', geometryType: 'octahedron', solidScale: 0.9, rotSpeed: 1.1, orbitRadius: 11.5, orbitSpeed: 0.06, orbitTilt: -0.5, orbitPhase: 0.8 },
     ];
 
     return (
         <div className="scene-container">
-            {/* Top Navigation */}
             <div className="scene-nav">
                 <div className="nav-left">
-                    {onBack && (
-                        <button className="back-btn" onClick={onBack} title="Back to Home">
-                            ←
-                        </button>
-                    )}
+                    {onBack && <button className="back-btn" onClick={onBack}>←</button>}
                     <h1 className="scene-logo">ROY ZHENG</h1>
                 </div>
-                <button className="about-btn" onClick={() => setShowAbout(true)}>
-                    About Me
-                </button>
+                <button className="about-btn" onClick={() => setShowAbout(true)}>About Me</button>
             </div>
 
-            <Canvas camera={{ position: [0, 4, 15], fov: 60 }}>
+            <Canvas camera={{ position: [0, 0, 18], fov: 60 }}>
                 <color attach="background" args={['#030308']} />
-
-                {/* Camera Control Logic */}
                 <CameraController mode={viewMode} targetPos={solidWorldPos} />
-
-                {/* Lighting */}
                 <ambientLight intensity={0.15} />
                 <directionalLight position={[5, 5, 5]} intensity={0.6} color="#e0d4ff" />
-
-                {/* Stars */}
                 <Stars radius={80} depth={60} count={4000} factor={3} saturation={0.2} fade speed={1} />
-
-                {/* Floating particles */}
                 <Particles />
-
-                {/* Project Orbital Shells */}
                 <group visible={viewMode === 'galaxy'}>
+                    <GeometricPerson />
                     <GeometricSun onClick={() => setShowAbout(true)} />
                     {projects.map((p) => (
                         <OrbitalShell
@@ -550,18 +475,9 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
                     ))}
                 </group>
 
-                {/* Project Landing View Content */}
                 {viewMode === 'project' && selectedProject && (
                     <group position={[solidWorldPos!.x, solidWorldPos!.y, solidWorldPos!.z]}>
-                        {/* The Shape itself at the bottom of the screen */}
-                        <PlatonicSolid 
-                            {...selectedProject} 
-                            solidScale={1.5}
-                            onProjectSelect={() => {}} 
-                            paused={true}
-                        />
-                        
-                        {/* Star Placeholders for Images/Links */}
+                        <PlatonicSolid {...selectedProject} solidScale={1.5} onProjectSelect={() => {}} paused={true} />
                         <group position={[0, 4, -5]}>
                             <StarLink position={[-3, 2, 0]} label="Gallery Image 1" />
                             <StarLink position={[0, 3, -1]} label="Project Demo" />
@@ -576,34 +492,23 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
                     enablePan={false}
                     enableZoom={viewMode === 'galaxy'}
                     minDistance={6}
-                    maxDistance={25}
+                    maxDistance={30}
                     autoRotate={viewMode === 'galaxy'}
                     autoRotateSpeed={0.3}
                 />
 
-                {/* Post-processing */}
                 <EffectComposer>
                     <Bloom luminanceThreshold={0.15} luminanceSmoothing={0.9} intensity={1.2} />
                     <Vignette eskil={false} offset={0.1} darkness={1.1} />
                 </EffectComposer>
             </Canvas>
 
-            {/* Back to Galaxy Button */}
             {viewMode === 'project' && (
-                <button 
-                    className="back-to-galaxy-btn"
-                    onClick={() => {
-                        setViewMode('galaxy');
-                        setSelectedProject(null);
-                    }}
-                >
+                <button className="back-to-galaxy-btn" onClick={() => { setViewMode('galaxy'); setSelectedProject(null); }}>
                     ← Back to Galaxy
                 </button>
             )}
 
-
-
-            {/* About Me */}
             <AnimatePresence>
                 {showAbout && <AboutMe onClose={() => setShowAbout(false)} />}
             </AnimatePresence>
