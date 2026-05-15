@@ -1,0 +1,138 @@
+.landing-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background-color: #000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ambient-lighting {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(20, 0, 40, 0.3) 0%, rgba(0, 0, 0, 1) 100%);
+    pointer-events: none;
+}
+
+.black-hole-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aura-glow {
+    position: absolute;
+    width: 120%;
+    height: 120%;
+    border-radius: 50%;
+    background: linear-gradient(to right, #9333ea, #2563eb, #4f46e5);
+    opacity: 0.3;
+    filter: blur(100px);
+    animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.aura-core {
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    background-color: #fff;
+    opacity: 0.1;
+    filter: blur(50px);
+}
+
+.black-hole-img {
+    position: relative;
+    z-index: 10;
+    width: min(95vw, 95vh);
+    height: min(95vw, 95vh);
+    object-fit: contain;
+    mix-blend-mode: screen;
+    filter: contrast(1.3) brightness(1.15) saturate(1.1);
+}
+
+.overlay-content {
+    position: absolute;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 400px;
+}
+
+.title {
+    font-size: 4rem;
+    font-weight: 700;
+    color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+    background-image: linear-gradient(to right, #f3f4f6, #6b7280);
+    letter-spacing: -0.05em;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .title {
+        font-size: 5rem;
+    }
+}
+
+.subtitle {
+    color: #9ca3af;
+    font-size: 1.125rem;
+    margin-bottom: 2.5rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 300;
+}
+
+.explore-btn {
+    position: relative;
+    padding: 1rem 2rem;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.explore-btn:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-bg {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+}
+
+.explore-btn:hover .btn-bg {
+    transform: translateY(0);
+}
+
+.btn-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #fff;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+.arrow-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    transition: transform 0.3s ease;
+}
+
+.explore-btn:hover .arrow-icon {
+    transform: translateX(4px);
+}
