@@ -55,12 +55,12 @@
 
 /* ─── Floating Equations ─── */
 .floating-equation {
-    color: rgba(255, 255, 255, 0.2);
-    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
     white-space: nowrap;
     user-select: none;
-    filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.15));
-    animation: twinkle-pulse 7s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.25));
+    animation: twinkle-pulse 6s ease-in-out infinite;
 }
 
 .floating-equation .katex {
@@ -70,12 +70,12 @@
 
 @keyframes twinkle-pulse {
     0%, 100% {
-        opacity: 0.15;
-        filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.1));
+        opacity: 0.25;
+        filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.15));
     }
     50% {
-        opacity: 0.4;
-        filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.25));
+        opacity: 0.65;
+        filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.4));
     }
 }
 
@@ -210,4 +210,66 @@
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.4);
     color: #fff;
+}
+
+/* ─── Orbital Equations ─── */
+.ring-equation {
+    font-size: 9px;
+    white-space: nowrap;
+    user-select: none;
+    text-shadow: 0 0 5px currentColor;
+    font-family: 'Inter', sans-serif;
+    pointer-events: none;
+}
+
+/* ─── Star Link Labels ─── */
+.star-link-label {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: #fff;
+    font-size: 12px;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+    transform: translateY(0);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.star-link-label.active {
+    opacity: 1;
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Back to Galaxy Button ─── */
+.back-to-galaxy-btn {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.back-to-galaxy-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateX(-50%) scale(1.05);
 }

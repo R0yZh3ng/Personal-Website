@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, Float, Html } from '@react-three/drei';
+import { OrbitControls, Stars, Float, Html, Trail } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { AnimatePresence, motion } from 'framer-motion';
 import * as THREE from 'three';
@@ -9,16 +9,17 @@ import './ProjectScene.css';
 
 /* ─── Wireframe Platonic Solid ─── */
 const PlatonicSolid = ({
-    position,
     color,
     label,
     description,
     geometryType,
     solidScale,
     rotSpeed,
-    onClick,
+    onProjectSelect,
+    paused = false,
 }: any) => {
-    const groupRef = useRef<THREE.Group>(null);
+    const meshRef = useRef<THREE.Group>(null);
+    const rotationRef = useRef({ x: 0, y: 0 });
     const [hovered, setHovered] = useState(false);
 
     const geometry = useMemo(() => {
@@ -27,78 +28,84 @@ const PlatonicSolid = ({
             case 'octahedron': return new THREE.OctahedronGeometry(1, 0);
             case 'dodecahedron': return new THREE.DodecahedronGeometry(1, 0);
             case 'tetrahedron': return new THREE.TetrahedronGeometry(1, 0);
+            case 'box': return new THREE.BoxGeometry(1, 1, 1);
             default: return new THREE.IcosahedronGeometry(1, 0);
         }
     }, [geometryType]);
 
     useFrame((_, delta) => {
-        if (groupRef.current) {
-            groupRef.current.rotation.x += delta * rotSpeed * 0.3;
-            groupRef.current.rotation.y += delta * rotSpeed * 0.5;
-            groupRef.current.rotation.z += delta * rotSpeed * 0.1;
+        if (meshRef.current && !paused) {
+            rotationRef.current.x += delta * rotSpeed * 0.3;
+            rotationRef.current.y += delta * rotSpeed * 0.5;
+            meshRef.current.rotation.x = rotationRef.current.x;
+            meshRef.current.rotation.y = rotationRef.current.y;
         }
     });
 
+    const handleProjectClick = () => {
+        if (meshRef.current) {
+            const worldPos = new THREE.Vector3();
+            meshRef.current.getWorldPosition(worldPos);
+            onProjectSelect(worldPos);
+        }
+    };
+
     return (
-        <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.6}>
-            <group position={position}>
-                <group
-                    ref={groupRef}
-                    scale={hovered ? solidScale * 1.15 : solidScale}
-                    onClick={onClick}
-                    onPointerOver={() => setHovered(true)}
-                    onPointerOut={() => setHovered(false)}
-                >
-                    {/* Solid fill — translucent */}
-                    <mesh geometry={geometry}>
-                        <meshStandardMaterial
-                            color={color}
-                            transparent
-                            opacity={hovered ? 0.25 : 0.1}
-                            side={THREE.DoubleSide}
-                        />
-                    </mesh>
+        <group
+            ref={meshRef}
+            scale={hovered ? solidScale * 1.15 : solidScale}
+            onClick={(e) => { e.stopPropagation(); handleProjectClick(); }}
+            onPointerOver={() => setHovered(true)}
+            onPointerOut={() => setHovered(false)}
+        >
+            {/* Solid fill — translucent */}
+            <mesh geometry={geometry}>
+                <meshStandardMaterial
+                    color={color}
+                    transparent
+                    opacity={hovered ? 0.25 : 0.1}
+                    side={THREE.DoubleSide}
+                />
+            </mesh>
 
-                    {/* Wireframe overlay */}
-                    <mesh geometry={geometry}>
-                        <meshBasicMaterial
-                            color={color}
-                            wireframe
-                            transparent
-                            opacity={hovered ? 1 : 0.6}
-                        />
-                    </mesh>
+            {/* Wireframe overlay */}
+            <mesh geometry={geometry}>
+                <meshBasicMaterial
+                    color={color}
+                    wireframe
+                    transparent
+                    opacity={hovered ? 1 : 0.6}
+                />
+            </mesh>
 
-                    {/* Inner glow point */}
-                    <pointLight
-                        color={color}
-                        intensity={hovered ? 3 : 0.8}
-                        distance={5}
-                        decay={2}
-                    />
-                </group>
+            {/* Inner glow point */}
+            <pointLight
+                color={color}
+                intensity={hovered ? 3 : 0.8}
+                distance={5}
+                decay={2}
+            />
 
-                {/* Label */}
-                <Html
-                    position={[0, solidScale + 1.2, 0]}
-                    center
-                    style={{ pointerEvents: 'none' }}
-                >
-                    <div className={`solid-label ${hovered ? 'solid-label--active' : ''}`}>
-                        {label}
+            {/* Label */}
+            <Html
+                position={[0, solidScale + 1.2, 0]}
+                center
+                style={{ pointerEvents: 'none' }}
+            >
+                <div className={`solid-label ${hovered ? 'solid-label--active' : ''}`}>
+                    {label}
+                </div>
+            </Html>
+
+            {/* Description tooltip */}
+            {hovered && (
+                <Html position={[0, -solidScale - 1.2, 0]} center>
+                    <div className="asteroid-tooltip">
+                        <p>{description}</p>
                     </div>
                 </Html>
-
-                {/* Description tooltip */}
-                {hovered && (
-                    <Html position={[0, -solidScale - 1.2, 0]} center>
-                        <div className="asteroid-tooltip">
-                            <p>{description}</p>
-                        </div>
-                    </Html>
-                )}
-            </group>
-        </Float>
+            )}
+        </group>
     );
 };
 
@@ -141,17 +148,86 @@ const Particles = () => {
     );
 };
 
-/* ─── Grid Ring ─── */
-const GridRing = ({ radius, color, speed }: { radius: number; color: string; speed: number }) => {
-    const ref = useRef<THREE.Mesh>(null);
-    useFrame((_, delta) => {
-        if (ref.current) ref.current.rotation.z += delta * speed;
-    });
+/* ─── Equation Orbital Ring ─── */
+const EquationRing = ({ radius, color, segments = 40 }: { radius: number; color: string; segments?: number }) => {
+    // Equations to populate the ring
+    const ringEquations = [
+        String.raw`\int x^n dx`, String.raw`e^{i\pi} + 1 = 0`, 
+        String.raw`f(n) = \Theta(g(n))`, String.raw`P = NP?`,
+        String.raw`E = mc^2`, String.raw`a^2 + b^2 = c^2`,
+        String.raw`d/dx \sin(x)`, String.raw`H\psi = E\psi`,
+        String.raw`\nabla \cdot \mathbf{E}`, String.raw`\zeta(s)`,
+        String.raw`F = ma`, String.raw`PV = nRT`
+    ];
+
     return (
-        <mesh ref={ref} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[radius, 0.005, 8, 120]} />
-            <meshBasicMaterial color={color} transparent opacity={0.15} />
-        </mesh>
+        <group rotation={[Math.PI / 2, 0, 0]}>
+            {Array.from({ length: segments }).map((_, i) => {
+                const angle = (i / segments) * Math.PI * 2;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                const latex = ringEquations[i % ringEquations.length];
+                const html = katex.renderToString(latex, { throwOnError: false });
+
+                return (
+                    <Html 
+                        key={i} 
+                        position={[x, y, 0]} 
+                        center 
+                        transform
+                        rotation={[0, 0, angle + Math.PI / 2]} // Tangent orientation
+                    >
+                        <div 
+                            className="ring-equation" 
+                            style={{ color: color, opacity: 0.35 }}
+                            dangerouslySetInnerHTML={{ __html: html }} 
+                        />
+                    </Html>
+                );
+            })}
+        </group>
+    );
+};/* ─── Unified Orbital Shell ─── */
+const OrbitalShell = ({ project, onProjectSelect, paused = false }: { project: any; onProjectSelect: (pos: THREE.Vector3) => void; paused?: boolean }) => {
+    const shellRef = useRef<THREE.Group>(null);
+    const localTime = useRef(0);
+
+    useFrame((_, delta) => {
+        if (!paused) {
+            localTime.current += delta;
+        }
+        if (shellRef.current) {
+            shellRef.current.rotation.y = localTime.current * project.orbitSpeed + project.orbitPhase;
+        }
+    });
+
+    return (
+        <group 
+            rotation={[project.orbitTilt, 0, project.orbitTilt * 0.5]}
+        >
+            {/* The Equation Path */}
+            <EquationRing radius={project.orbitRadius} color={project.color} />
+            
+            {/* The Orbiting Solid */}
+            <group ref={shellRef}>
+                <group position={[project.orbitRadius, 0, 0]}>
+                    <Trail
+                        width={2.0}
+                        length={15}
+                        color={project.color}
+                        attenuation={(t) => t * t}
+                    >
+                        <group>
+                            <PlatonicSolid 
+                                {...project} 
+                                onProjectSelect={onProjectSelect} 
+                                paused={paused}
+                            />
+                        </group>
+                    </Trail>
+                </group>
+            </group>
+        </group>
     );
 };
 
@@ -237,50 +313,99 @@ const FloatingEquations = () => {
     );
 };
 
-const Sun = ({ onClick }: { onClick: () => void }) => {
-    const meshRef = useRef<THREE.Mesh>(null);
-    const coronaRef = useRef<THREE.Mesh>(null);
+const GeometricSun = ({ onClick }: { onClick: () => void }) => {
+    const coreRef = useRef<THREE.Mesh>(null);
+    const outerRef = useRef<THREE.Mesh>(null);
 
     useFrame(({ clock }) => {
-        if (meshRef.current && coronaRef.current) {
+        if (coreRef.current && outerRef.current) {
             const time = clock.getElapsedTime();
-            const pulse = 1 + Math.sin(time * 1.5) * 0.05;
-            meshRef.current.scale.set(pulse, pulse, pulse);
-            coronaRef.current.scale.set(pulse * 1.3, pulse * 1.3, pulse * 1.3);
+            coreRef.current.rotation.y = time * 0.5;
+            coreRef.current.rotation.z = time * 0.3;
+            outerRef.current.rotation.y = -time * 0.2;
+            outerRef.current.rotation.x = time * 0.1;
             
-            // Dynamic emissive intensity
-            if (meshRef.current.material instanceof THREE.MeshStandardMaterial) {
-                meshRef.current.material.emissiveIntensity = 2 + Math.sin(time * 2) * 0.5;
-            }
+            const pulse = 1 + Math.sin(time * 2) * 0.1;
+            coreRef.current.scale.set(pulse, pulse, pulse);
         }
     });
 
     return (
-        <group position={[0, 0, 0]}>
-            {/* Sun Core */}
-            <mesh ref={meshRef} onClick={(e) => { e.stopPropagation(); onClick(); }} cursor="pointer">
-                <sphereGeometry args={[1.2, 64, 64]} />
+        <group position={[0, 0, 0]} onClick={(e) => { e.stopPropagation(); onClick(); }}>
+            {/* Inner Core */}
+            <mesh ref={coreRef}>
+                <icosahedronGeometry args={[0.8, 0]} />
                 <meshStandardMaterial 
-                    color="#ffcc33" 
-                    emissive="#ffcc33" 
+                    color="#fff" 
+                    emissive="#ff0044" 
+                    emissiveIntensity={4} 
+                    wireframe
+                />
+            </mesh>
+
+            {/* Outer Crystalline Shell */}
+            <mesh ref={outerRef}>
+                <icosahedronGeometry args={[1.2, 1]} />
+                <meshStandardMaterial 
+                    color="#ff00ff" 
+                    emissive="#5500ff" 
                     emissiveIntensity={2} 
+                    transparent
+                    opacity={0.3}
+                    wireframe
                 />
             </mesh>
 
-            {/* Sun Corona / Glow */}
-            <mesh ref={coronaRef}>
-                <sphereGeometry args={[1.2, 32, 32]} />
-                <meshBasicMaterial 
-                    color="#ff6600" 
-                    transparent 
-                    opacity={0.3} 
-                />
-            </mesh>
-
-            {/* Point Light from Sun */}
-            <pointLight intensity={3} distance={60} color="#ffaa00" />
+            {/* Chaotic Light Sources */}
+            <pointLight intensity={5} distance={30} color="#ff0044" position={[2, 2, 2]} />
+            <pointLight intensity={5} distance={30} color="#00ffff" position={[-2, -2, -2]} />
+            <pointLight intensity={3} distance={50} color="#ffaa00" />
         </group>
     );
+};
+
+/* ─── Project Star Link (Placeholder for Images/Links) ─── */
+const StarLink = ({ position, label }: { position: [number, number, number], label: string }) => {
+    const [hovered, setHovered] = useState(false);
+    return (
+        <group position={position}>
+            <mesh 
+                onPointerOver={() => setHovered(true)} 
+                onPointerOut={() => setHovered(false)}
+            >
+                <sphereGeometry args={[0.1, 16, 16]} />
+                <meshStandardMaterial 
+                    color="#fff" 
+                    emissive="#fff" 
+                    emissiveIntensity={hovered ? 5 : 1} 
+                />
+            </mesh>
+            <Html position={[0, 0.3, 0]} center>
+                <div className={`star-link-label ${hovered ? 'active' : ''}`}>
+                    {label}
+                </div>
+            </Html>
+        </group>
+    );
+};
+
+/* ─── Camera Controller ─── */
+const CameraController = ({ mode, targetPos }: { mode: 'galaxy' | 'project', targetPos: THREE.Vector3 | null }) => {
+    useFrame((state) => {
+        const step = 0.05;
+        if (mode === 'project' && targetPos) {
+            // Target view: looking up from the shape
+            const idealCameraPos = new THREE.Vector3().copy(targetPos).add(new THREE.Vector3(0, 1.2, 5));
+            state.camera.position.lerp(idealCameraPos, step);
+            state.camera.lookAt(targetPos.x, targetPos.y + 3, targetPos.z - 8);
+        } else {
+            // Galaxy view: standard perspective
+            const idealCameraPos = new THREE.Vector3(0, 4, 15);
+            state.camera.position.lerp(idealCameraPos, step);
+            state.camera.lookAt(0, 0, 0);
+        }
+    });
+    return null;
 };
 
 /* ─── Scene ─── */
@@ -289,8 +414,10 @@ interface ProjectSceneProps {
 }
 
 export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
+    const [viewMode, setViewMode] = useState<'galaxy' | 'project'>('galaxy');
     const [selectedProject, setSelectedProject] = useState<any>(null);
     const [showAbout, setShowAbout] = useState(false);
+    const [solidWorldPos, setSolidWorldPos] = useState<THREE.Vector3 | null>(null);
 
     const projects = [
         {
@@ -298,40 +425,78 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
             label: 'Quantum Simulator',
             description: 'Simulating quantum circuits and entanglement dynamics',
             color: '#a78bfa',
-            position: [-5, 2.5, -1],
             geometryType: 'icosahedron',
-            solidScale: 1.4,
-            rotSpeed: 1.0,
+            solidScale: 1.0,
+            rotSpeed: 0.8,
+            orbitRadius: 4,
+            orbitSpeed: 0.2,
+            orbitTilt: 0.5,
+            orbitPhase: 0,
         },
         {
             id: 2,
             label: 'Algorithmic Trading',
             description: 'High-frequency market-making strategies in C++ / Python',
             color: '#60a5fa',
-            position: [5, -0.5, -2],
             geometryType: 'octahedron',
-            solidScale: 1.2,
-            rotSpeed: 1.4,
+            solidScale: 0.9,
+            rotSpeed: 1.0,
+            orbitRadius: 5.5,
+            orbitSpeed: 0.15,
+            orbitTilt: -0.5,
+            orbitPhase: 2.5,
         },
         {
             id: 3,
             label: 'Topology Visualizer',
             description: 'Interactive exploration of complex manifolds & knot invariants',
             color: '#34d399',
-            position: [0, -4, 1.5],
             geometryType: 'dodecahedron',
-            solidScale: 1.6,
-            rotSpeed: 0.7,
+            solidScale: 1.1,
+            rotSpeed: 0.6,
+            orbitRadius: 7,
+            orbitSpeed: 0.12,
+            orbitTilt: 0.5,
+            orbitPhase: 1.2,
         },
         {
             id: 4,
             label: 'Fluid Dynamics',
             description: 'GPU-accelerated Navier-Stokes solver with real-time vis',
             color: '#fbbf24',
-            position: [-4, -1.5, 3],
             geometryType: 'tetrahedron',
-            solidScale: 1.3,
+            solidScale: 0.9,
+            rotSpeed: 0.9,
+            orbitRadius: 8.5,
+            orbitSpeed: 0.1,
+            orbitTilt: -0.5,
+            orbitPhase: 3.8,
+        },
+        {
+            id: 5,
+            label: 'Neural Engine',
+            description: 'Transformer-based LLM optimization for edge devices',
+            color: '#ec4899',
+            geometryType: 'box',
+            solidScale: 0.8,
             rotSpeed: 1.2,
+            orbitRadius: 10,
+            orbitSpeed: 0.08,
+            orbitTilt: 0.5,
+            orbitPhase: 5.2,
+        },
+        {
+            id: 6,
+            label: 'Cloud Infrastructure',
+            description: 'Auto-scaling k8s clusters with serverless orchestration',
+            color: '#06b6d4',
+            geometryType: 'octahedron',
+            solidScale: 0.9,
+            rotSpeed: 1.1,
+            orbitRadius: 11.5,
+            orbitSpeed: 0.06,
+            orbitTilt: -0.5,
+            orbitPhase: 0.8,
         },
     ];
 
@@ -352,8 +517,11 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
                 </button>
             </div>
 
-            <Canvas camera={{ position: [8, 5, 15], fov: 60 }}>
+            <Canvas camera={{ position: [0, 4, 15], fov: 60 }}>
                 <color attach="background" args={['#030308']} />
+
+                {/* Camera Control Logic */}
+                <CameraController mode={viewMode} targetPos={solidWorldPos} />
 
                 {/* Lighting */}
                 <ambientLight intensity={0.15} />
@@ -362,36 +530,55 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
                 {/* Stars */}
                 <Stars radius={80} depth={60} count={4000} factor={3} saturation={0.2} fade speed={1} />
 
-                {/* Orbital grid rings */}
-                <GridRing radius={7} color="#8b5cf6" speed={0.05} />
-                <GridRing radius={10} color="#3b82f6" speed={-0.03} />
-                <GridRing radius={14} color="#6366f1" speed={0.02} />
-
-                {/* Floating equations */}
-                <FloatingEquations />
-
                 {/* Floating particles */}
                 <Particles />
 
-                {/* Central Sun */}
-                <Sun onClick={() => setShowAbout(true)} />
+                {/* Project Orbital Shells */}
+                <group visible={viewMode === 'galaxy'}>
+                    <GeometricSun onClick={() => setShowAbout(true)} />
+                    {projects.map((p) => (
+                        <OrbitalShell
+                            key={p.id}
+                            project={p}
+                            paused={viewMode === 'project'}
+                            onProjectSelect={(pos) => {
+                                setSolidWorldPos(pos);
+                                setSelectedProject(p);
+                                setViewMode('project');
+                            }}
+                        />
+                    ))}
+                </group>
 
-                {/* Project solids */}
-                {projects.map((p) => (
-                    <PlatonicSolid
-                        key={p.id}
-                        {...p}
-                        onClick={() => setSelectedProject(p)}
-                    />
-                ))}
+                {/* Project Landing View Content */}
+                {viewMode === 'project' && selectedProject && (
+                    <group position={[solidWorldPos!.x, solidWorldPos!.y, solidWorldPos!.z]}>
+                        {/* The Shape itself at the bottom of the screen */}
+                        <PlatonicSolid 
+                            {...selectedProject} 
+                            solidScale={1.5}
+                            onProjectSelect={() => {}} 
+                            paused={true}
+                        />
+                        
+                        {/* Star Placeholders for Images/Links */}
+                        <group position={[0, 4, -5]}>
+                            <StarLink position={[-3, 2, 0]} label="Gallery Image 1" />
+                            <StarLink position={[0, 3, -1]} label="Project Demo" />
+                            <StarLink position={[3, 2, 0]} label="GitHub Source" />
+                            <StarLink position={[-1.5, 5, -2]} label="Tech Stack" />
+                            <StarLink position={[1.5, 5, -2]} label="Case Study" />
+                        </group>
+                    </group>
+                )}
 
                 <OrbitControls
                     enablePan={false}
-                    enableZoom={true}
+                    enableZoom={viewMode === 'galaxy'}
                     minDistance={6}
-                    maxDistance={22}
-                    autoRotate
-                    autoRotateSpeed={0.4}
+                    maxDistance={25}
+                    autoRotate={viewMode === 'galaxy'}
+                    autoRotateSpeed={0.3}
                 />
 
                 {/* Post-processing */}
@@ -401,36 +588,20 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
                 </EffectComposer>
             </Canvas>
 
-            {/* Project Details Overlay */}
-            <AnimatePresence>
-                {selectedProject && (
-                    <motion.div
-                        className="project-details-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        onClick={() => setSelectedProject(null)}
-                    >
-                        <motion.div
-                            className="project-details-card"
-                            initial={{ y: 30, scale: 0.95, opacity: 0 }}
-                            animate={{ y: 0, scale: 1, opacity: 1 }}
-                            exit={{ y: 20, scale: 0.95, opacity: 0 }}
-                            transition={{ duration: 0.35 }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div
-                                className="card-accent"
-                                style={{ background: selectedProject.color }}
-                            />
-                            <h2>{selectedProject.label}</h2>
-                            <p>{selectedProject.description}</p>
-                            <button onClick={() => setSelectedProject(null)}>Close</button>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Back to Galaxy Button */}
+            {viewMode === 'project' && (
+                <button 
+                    className="back-to-galaxy-btn"
+                    onClick={() => {
+                        setViewMode('galaxy');
+                        setSelectedProject(null);
+                    }}
+                >
+                    ← Back to Galaxy
+                </button>
+            )}
+
+
 
             {/* About Me */}
             <AnimatePresence>
