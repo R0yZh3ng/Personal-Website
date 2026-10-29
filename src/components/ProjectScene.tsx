@@ -11,6 +11,7 @@ import {
     AboutPanel, ExperiencePanel, ProjectDetail, ProjectsPanel, SkillsPanel, type PanelId,
 } from './Panels';
 import { Belt, FloatingEquations, Intro, Planet, Sky, Star } from './StarSystem';
+import { Titan } from './Titan';
 import './ProjectScene.css';
 
 const kepler = katex.renderToString(String.raw`T^{2}=\frac{4\pi^{2}}{GM}\,a^{3}`, { throwOnError: false });
@@ -111,6 +112,7 @@ export const ProjectScene: React.FC<ProjectSceneProps> = ({ onBack }) => {
                 <ambientLight intensity={0.25} />
 
                 <Sky />
+                <Titan />
                 <Star />
                 <Belt />
                 <FloatingEquations />
