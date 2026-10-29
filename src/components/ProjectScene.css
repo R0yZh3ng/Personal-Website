@@ -1,276 +1,122 @@
 .scene-container {
+    position: relative;
     width: 100%;
     height: 100%;
-    position: relative;
-    cursor: grab;
+    background: var(--bg);
+    overflow: hidden;
 }
 
-.scene-container:active {
-    cursor: grabbing;
-}
-
-/* ─── Nav ─── */
 .scene-nav {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 1.5rem 2.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     z-index: 50;
-    pointer-events: none;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(to bottom, rgba(4, 6, 11, 0.9), transparent);
 }
 
-.nav-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    pointer-events: auto;
-}
+.nav-left { display: flex; align-items: center; gap: 0.75rem; }
 
 .back-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.1rem;
+    display: grid; place-items: center;
+    width: 2rem; height: 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line);
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.3s;
-    backdrop-filter: blur(6px);
-    pointer-events: auto;
+    transition: border-color 0.15s, background 0.15s;
 }
-
-.back-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #fff;
-}
-
-/* ─── Floating Equations ─── */
-.floating-equation {
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 14px;
-    white-space: nowrap;
-    user-select: none;
-    filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.25));
-    animation: twinkle-pulse 6s ease-in-out infinite;
-}
-
-.floating-equation .katex {
-    color: inherit;
-    font-size: inherit;
-}
-
-@keyframes twinkle-pulse {
-    0%, 100% {
-        opacity: 0.25;
-        filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.15));
-    }
-    50% {
-        opacity: 0.65;
-        filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.4));
-    }
-}
+.back-btn:hover { border-color: var(--accent); background: rgba(103, 232, 249, 0.08); }
 
 .scene-logo {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.8);
-    letter-spacing: 0.15em;
-    pointer-events: auto;
+    background: none; border: none; cursor: pointer; padding: 0;
+    font-size: 0.95rem; font-weight: 700; color: var(--text);
 }
+.logo-prompt { color: var(--accent); }
+.logo-cursor { color: var(--accent); animation: blink 1s steps(1) infinite; margin-left: 2px; }
 
-.about-btn {
-    pointer-events: auto;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.8);
-    padding: 0.5rem 1.5rem;
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all 0.3s;
-    backdrop-filter: blur(6px);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.875rem;
-    font-weight: 500;
-    letter-spacing: 0.03em;
-}
+.nav-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 
-.about-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #fff;
-}
-
-/* ─── 3D Labels ─── */
-.solid-label {
-    color: rgba(255, 255, 255, 0.6);
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    text-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
-    transition: all 0.3s;
-}
-
-.solid-label--active {
-    color: #fff;
-    text-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
-}
-
-/* ─── Tooltip ─── */
-.asteroid-tooltip {
-    background: rgba(8, 8, 16, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.85);
-    font-family: 'Inter', sans-serif;
+.tab {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
-    white-space: nowrap;
-    pointer-events: none;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.asteroid-tooltip p {
-    margin: 0;
-}
-
-/* ─── Project Card Overlay ─── */
-.project-details-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(12px);
-    z-index: 100;
-}
-
-.project-details-card {
-    position: relative;
-    overflow: hidden;
-    background: rgba(12, 12, 20, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 2.5rem;
-    border-radius: 16px;
-    max-width: 480px;
-    width: 90%;
-    color: white;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
-}
-
-.card-accent {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    opacity: 0.8;
-}
-
-.project-details-card h2 {
-    font-family: 'Outfit', sans-serif;
-    font-size: 1.75rem;
-    margin-bottom: 1rem;
-    color: #fff;
-}
-
-.project-details-card p {
-    color: rgba(255, 255, 255, 0.65);
-    line-height: 1.7;
-    margin-bottom: 2rem;
-    font-size: 0.95rem;
-}
-
-.project-details-card button {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.8);
-    padding: 0.5rem 1.5rem;
-    border-radius: 9999px;
+    color: var(--dim);
+    background: rgba(8, 12, 22, 0.6);
+    border: 1px solid var(--line);
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.25s;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.85rem;
+    backdrop-filter: blur(8px);
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.tab:hover { color: var(--text); border-color: var(--line-strong); text-decoration: none; }
+.tab--active { color: var(--accent); border-color: var(--accent); background: rgba(103, 232, 249, 0.1); }
+.tab--cta { color: var(--accent); border-color: var(--line-strong); }
+
+.solid-label {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    padding: 0.2rem 0.6rem;
+    color: var(--dim);
+    background: rgba(4, 6, 11, 0.6);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    user-select: none;
+    display: flex; flex-direction: column; align-items: center; line-height: 1.35;
+}
+.solid-label small { font-size: 0.62rem; color: var(--dim); max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.2s, opacity 0.2s; }
+.solid-label--active small { max-height: 1.2rem; opacity: 1; }
+.solid-label--active {
+    color: var(--c);
+    border-color: var(--c);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--c) 40%, transparent);
 }
 
-.project-details-card button:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #fff;
-}
-
-/* ─── Orbital Equations ─── */
-.ring-equation {
-    font-size: 9px;
+.floating-equation {
+    color: rgba(180, 215, 255, 0.28);
+    font-size: 1.05rem;
     white-space: nowrap;
     user-select: none;
-    text-shadow: 0 0 8px currentColor, 0 0 12px currentColor;
-    font-weight: 500;
-    font-family: 'Inter', sans-serif;
-    pointer-events: none;
 }
+.floating-equation .katex { color: inherit; }
 
-/* ─── Star Link Labels ─── */
-.star-link-label {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 6px 12px;
-    border-radius: 20px;
-    color: #fff;
-    font-size: 12px;
-    font-family: 'Outfit', sans-serif;
-    letter-spacing: 0.05em;
-    opacity: 0.6;
-    transform: translateY(0);
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
-
-.star-link-label.active {
-    opacity: 1;
-    transform: translateY(-5px);
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-}
-
-/* ─── Back to Galaxy Button ─── */
-.back-to-galaxy-btn {
-    position: fixed;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-    padding: 12px 24px;
-    border-radius: 30px;
-    font-family: 'Outfit', sans-serif;
-    font-size: 14px;
-    cursor: pointer;
-    z-index: 100;
-    transition: all 0.3s ease;
+.scene-footer {
+    position: absolute;
+    z-index: 45;
+    left: 0; right: 0; bottom: 0;
     display: flex;
-    align-items: center;
-    gap: 10px;
+    gap: 1.5rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.72rem;
+    color: var(--dim);
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(4, 6, 11, 0.9), transparent);
+}
+.footer-keys { margin-left: auto; }
+
+@media (max-width: 700px) {
+    .scene-footer span:not(.footer-keys) { display: none; }
+    .tab kbd { display: none; }
+    .scene-nav { padding: 0.6rem 0.75rem; }
 }
 
-.back-to-galaxy-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: translateX(-50%) scale(1.05);
+.system-hud {
+    position: absolute; z-index: 44; left: 2rem; bottom: 3.25rem;
+    width: 15rem; padding: 0.8rem 0.9rem;
+    font-size: 0.7rem; color: var(--dim);
+    background: rgba(4, 6, 11, 0.55); border: 1px solid var(--line);
+    backdrop-filter: blur(6px); pointer-events: none;
 }
+.sys-kepler { padding-bottom: 0.55rem; margin-bottom: 0.55rem; border-bottom: 1px dashed var(--line); color: rgba(190, 220, 255, 0.75); }
+.sys-kepler .katex { font-size: 0.9em; }
+.system-hud dl { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 1rem; margin: 0; }
+.system-hud dd { margin: 0; text-align: right; color: var(--accent); font-variant-numeric: tabular-nums; }
+.system-hud dd.on { color: var(--warn); }
+
+@media (max-width: 1000px) { .system-hud { display: none; } }
