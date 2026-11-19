@@ -23,7 +23,7 @@ export const profile = {
     phone: '+1 (604) 729-6358',
     github: 'https://github.com/R0yZh3ng',
     linkedin: 'https://linkedin.com/in/roy-zheng-06rz29',
-    resume: '/resume.pdf',
+    resume: `${import.meta.env.BASE_URL}resume.pdf`,
     location: 'Vancouver, BC',
 };
 
